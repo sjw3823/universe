@@ -23,21 +23,25 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        const points = [];
+        const whitePoints = [];
+        const greyPoints = [];
         const numPoints = 60;
         const G = 0.05;  // Gravitational constant for simulation
 
         class Point {
-            constructor(x, y) {
+            constructor(x, y, color) {
                 this.x = x;
                 this.y = y;
                 this.vx = Math.random() * 2 - 1;
                 this.vy = Math.random() * 2 - 1;
                 this.mass = Math.random() * 5 + 1;
                 this.gravity = Math.random() * 0.1 + 0.05;
+                this.color = color;
+                this.angle = Math.random() * Math.PI * 2;
+                this.angularVelocity = Math.random() * 0.01 - 0.005;
             }
 
-            update() {
+            update(points) {
                 for (let point of points) {
                     if (point !== this) {
                         const dx = point.x - this.x;
@@ -52,15 +56,16 @@
                         }
                     }
                 }
-                this.x += this.vx;
-                this.y += this.vy;
+                this.x += this.vx + Math.cos(this.angle) * 0.5;
+                this.y += this.vy + Math.sin(this.angle) * 0.5;
+                this.angle += this.angularVelocity;
 
                 if (this.x > canvas.width || this.x < 0) this.vx *= -1;
                 if (this.y > canvas.height || this.y < 0) this.vy *= -1;
             }
 
             draw() {
-                ctx.fillStyle = 'white';
+                ctx.fillStyle = this.color;
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
                 ctx.fill();
@@ -68,10 +73,11 @@
         }
 
         for (let i = 0; i < numPoints; i++) {
-            points.push(new Point(Math.random() * canvas.width, Math.random() * canvas.height));
+            whitePoints.push(new Point(Math.random() * canvas.width, Math.random() * canvas.height, 'white'));
+            greyPoints.push(new Point(Math.random() * canvas.width, Math.random() * canvas.height, 'grey'));
         }
 
-        function connectPoints() {
+        function connectPoints(points, strokeColor) {
             for (let i = 0; i < numPoints; i++) {
                 const distances = [];
                 for (let j = 0; j < numPoints; j++) {
@@ -85,7 +91,7 @@
                 distances.sort((a, b) => a.distance - b.distance);
 
                 for (let k = 0; k < 3; k++) {
-                    ctx.strokeStyle = 'rgba(255, 255, 255, ' + (1 - distances[k].distance / 150) + ')';
+                    ctx.strokeStyle = strokeColor + (1 - distances[k].distance / 150) + ')';
                     ctx.beginPath();
                     ctx.moveTo(points[i].x, points[i].y);
                     ctx.lineTo(distances[k].point.x, distances[k].point.y);
@@ -96,11 +102,16 @@
 
         function animate() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            points.forEach(point => {
-                point.update();
+            whitePoints.forEach(point => {
+                point.update(whitePoints);
                 point.draw();
             });
-            connectPoints();
+            greyPoints.forEach(point => {
+                point.update(greyPoints);
+                point.draw();
+            });
+            connectPoints(whitePoints, 'rgba(255, 255, 255, ');
+            connectPoints(greyPoints, 'rgba(128, 128, 128, ');
             requestAnimationFrame(animate);
         }
 
